@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { FaListUl, FaCheckCircle, FaHourglassHalf, FaChartLine } from 'react-icons/fa';
 
-export default function Dashboard({ total, solved }) {
+function Dashboard({ total, solved }) {
   const remaining = total - solved;
   const percentage = total > 0 ? Math.round((solved / total) * 100) : 0;
 
@@ -79,7 +79,7 @@ export default function Dashboard({ total, solved }) {
         <div className="relative w-full h-4 bg-zinc-950 border border-zinc-900 rounded-full overflow-hidden shadow-inner">
           <div
             style={{ width: `${percentage}%` }}
-            className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+            className="absolute top-0 left-0 h-full rounded-full bg-linear-to-r from-emerald-500 via-teal-500 to-indigo-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(16,185,129,0.3)]"
           />
           {/* Pulsing light overlay for sleek animation */}
           {percentage > 0 && (
@@ -93,3 +93,5 @@ export default function Dashboard({ total, solved }) {
     </div>
   );
 }
+
+export default memo(Dashboard);

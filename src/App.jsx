@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import useSolvedStatus from './hooks/useSolvedStatus';
 import CSVUploader from './components/CSVUploader';
 import Dashboard from './components/Dashboard';
@@ -7,12 +7,14 @@ import ProblemTable from './components/ProblemTable';
 import ProblemModal from './components/ProblemModal';
 import LeetCodeSync from './components/LeetCodeSync';
 import { FaCode, FaUpload, FaSyncAlt } from 'react-icons/fa';
+import { filterProblems } from './utils/problemFilters';
 
 export default function App() {
   const [problems, setProblems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [acceptanceRateFilter, setAcceptanceRateFilter] = useState('all');
   const [selectedProblem, setSelectedProblem] = useState(null);
   
   const { solvedIds, syncSolvedStatus, toggleSolved, setSolvedState } = useSolvedStatus();
@@ -38,24 +40,32 @@ export default function App() {
   }, [problems, syncSolvedStatus]);
 
   // Handle data load (either from CSV upload or demo load)
-  const handleDataLoaded = (data) => {
+  const handleDataLoaded = useCallback((data) => {
     setProblems(data);
     localStorage.setItem('leetrack-problems', JSON.stringify(data));
-  };
+  }, []);
 
   // Reset or clear uploaded data to start fresh
-  const handleResetData = () => {
+  const handleResetData = useCallback(() => {
     if (window.confirm('Are you sure you want to clear the uploaded problems? Your solved progress for these problems will remain saved in LocalStorage.')) {
       setProblems([]);
       localStorage.removeItem('leetrack-problems');
       setSearchQuery('');
       setDifficultyFilter('all');
       setStatusFilter('all');
+      setAcceptanceRateFilter('all');
     }
-  };
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setSearchQuery('');
+    setDifficultyFilter('all');
+    setStatusFilter('all');
+    setAcceptanceRateFilter('all');
+  }, []);
 
   // Cross-reference submissions from LeetCode with the loaded problem set
-  const handleSyncSolved = (submissions) => {
+  const handleSyncSolved = useCallback((submissions) => {
     let matchedCount = 0;
     
     // Extract slugs and titles from submissions
@@ -88,10 +98,10 @@ export default function App() {
     });
 
     return { matchedCount, totalCount: submissions.length };
-  };
+  }, [problems, setSolvedState]);
 
   // Bulk check matching problems from the uploaded full solved list JSON
-  const handleSyncAllSolved = (solvedIdsArray) => {
+  const handleSyncAllSolved = useCallback((solvedIdsArray) => {
     let matchedCount = 0;
     
     // Map array elements to string IDs for matching
@@ -105,7 +115,7 @@ export default function App() {
     });
 
     return matchedCount;
-  };
+  }, [problems, setSolvedState]);
 
   // Calculate live counts for filter buttons
   const counts = useMemo(() => {
@@ -132,32 +142,31 @@ export default function App() {
     return { all, easy, medium, hard, solved, unsolved };
   }, [problems, solvedIds]);
 
-  // Filter problems based on search query & selected category (Difficulty & Status)
   const filteredProblems = useMemo(() => {
-    return problems.filter((problem) => {
-      // 1. Filter by search query (title or ID match)
-      const matchesSearch = 
-        problem.Title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        String(problem.ID).includes(searchQuery);
-      if (!matchesSearch) return false;
-
-      // 2. Filter by difficulty
-      const diff = String(problem.Difficulty).toLowerCase();
-      if (difficultyFilter !== 'all' && diff !== difficultyFilter) return false;
-
-      // 3. Filter by solved status
-      const isSolved = solvedIds.has(String(problem.ID));
-      if (statusFilter === 'solved' && !isSolved) return false;
-      if (statusFilter === 'unsolved' && isSolved) return false;
-
-      return true;
+    return filterProblems({
+      problems,
+      searchQuery,
+      difficultyFilter,
+      statusFilter,
+      acceptanceRateFilter,
+      solvedIds,
     });
-  }, [problems, searchQuery, difficultyFilter, statusFilter, solvedIds]);
+  }, [problems, searchQuery, difficultyFilter, statusFilter, acceptanceRateFilter, solvedIds]);
+
+  const hasActiveFilters =
+    searchQuery.trim() !== '' ||
+    difficultyFilter !== 'all' ||
+    statusFilter !== 'all' ||
+    acceptanceRateFilter !== 'all';
 
   // Count solved problems overall
   const solvedCount = useMemo(() => {
     return problems.filter((p) => solvedIds.has(String(p.ID))).length;
   }, [problems, solvedIds]);
+
+  const handleRowClick = useCallback((problem) => {
+    setSelectedProblem(problem);
+  }, []);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
@@ -165,10 +174,10 @@ export default function App() {
       <header className="border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-xl shadow-md shadow-indigo-500/10">
+            <div className="p-2 bg-linear-to-tr from-indigo-500 to-purple-500 rounded-xl shadow-md shadow-indigo-500/10">
               <FaCode className="w-5 h-5 text-white" />
             </div>
-            <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+            <span className="font-extrabold text-xl tracking-tight bg-linear-to-r from-white to-zinc-400 bg-clip-text text-transparent">
               LeetTrack
             </span>
           </div>
@@ -186,9 +195,9 @@ export default function App() {
       </header>
 
       {/* Main Body */}
-      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col justify-start">
+      <main className="grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col justify-start">
         {problems.length === 0 ? (
-          <div className="flex-grow flex items-center justify-center py-12">
+          <div className="grow flex items-center justify-center py-12">
             <CSVUploader onDataLoaded={handleDataLoaded} />
           </div>
         ) : (
@@ -211,6 +220,10 @@ export default function App() {
                 setDifficultyFilter={setDifficultyFilter}
                 statusFilter={statusFilter}
                 setStatusFilter={setStatusFilter}
+                acceptanceRateFilter={acceptanceRateFilter}
+                setAcceptanceRateFilter={setAcceptanceRateFilter}
+                onClearFilters={handleClearFilters}
+                hasActiveFilters={hasActiveFilters}
                 counts={counts}
               />
 
@@ -219,7 +232,7 @@ export default function App() {
                 problems={filteredProblems}
                 solvedIds={solvedIds}
                 toggleSolved={toggleSolved}
-                onRowClick={(p) => setSelectedProblem(p)}
+                onRowClick={handleRowClick}
               />
             </div>
           </div>
