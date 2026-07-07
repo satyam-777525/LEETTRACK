@@ -42,7 +42,7 @@ export default function Filters({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search problems by title..."
+            placeholder="Search problems by title or ID..."
             className="w-full pl-10 pr-10 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all duration-300 backdrop-blur-md"
           />
           {searchQuery && (

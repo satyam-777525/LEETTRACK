@@ -135,8 +135,10 @@ export default function App() {
   // Filter problems based on search query & selected category (Difficulty & Status)
   const filteredProblems = useMemo(() => {
     return problems.filter((problem) => {
-      // 1. Filter by search query (title match)
-      const matchesSearch = problem.Title.toLowerCase().includes(searchQuery.toLowerCase());
+      // 1. Filter by search query (title or ID match)
+      const matchesSearch = 
+        problem.Title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        String(problem.ID).includes(searchQuery);
       if (!matchesSearch) return false;
 
       // 2. Filter by difficulty
