@@ -17,7 +17,7 @@ export default function App() {
   const [acceptanceRateFilter, setAcceptanceRateFilter] = useState('all');
   const [selectedProblem, setSelectedProblem] = useState(null);
   
-  const { solvedIds, syncSolvedStatus, toggleSolved, setSolvedState } = useSolvedStatus();
+  const { solvedIds, syncSolvedStatus, toggleSolved, setSolvedState, persistSolvedState } = useSolvedStatus();
 
   // Load problems from LocalStorage on mount
   useEffect(() => {
@@ -103,19 +103,76 @@ export default function App() {
   // Bulk check matching problems from the uploaded full solved list JSON
   const handleSyncAllSolved = useCallback((solvedIdsArray) => {
     let matchedCount = 0;
-    
-    // Map array elements to string IDs for matching
-    const importedIds = new Set(solvedIdsArray.map(id => String(id).trim()));
 
-    problems.forEach(problem => {
-      if (importedIds.has(String(problem.ID))) {
+    const normalizedIds = new Set();
+    const normalizedSlugs = new Set();
+    const normalizedTitles = new Set();
+
+    const normalizeIdValue = (value) => {
+      if (value === null || value === undefined) return null;
+      if (typeof value === 'number' && Number.isFinite(value)) return String(value).trim();
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        return trimmed ? trimmed : null;
+      }
+
+      if (typeof value === 'object') {
+        const objectCandidates = [
+          value.frontend_question_id,
+          value.question_id,
+          value.questionId,
+          value.questionID,
+          value.id,
+          value.ID,
+          value.stat?.question_id,
+        ];
+
+        for (const candidate of objectCandidates) {
+          const normalized = normalizeIdValue(candidate);
+          if (normalized) return normalized;
+        }
+      }
+
+      return null;
+    };
+
+    (Array.isArray(solvedIdsArray) ? solvedIdsArray : []).forEach((item) => {
+      const normalizedId = normalizeIdValue(item);
+      if (normalizedId) {
+        normalizedIds.add(normalizedId);
+        persistSolvedState(normalizedId, true);
+      }
+
+      if (item && typeof item === 'object') {
+        if (item.titleSlug) normalizedSlugs.add(String(item.titleSlug).toLowerCase().trim());
+        if (item.title) normalizedTitles.add(String(item.title).toLowerCase().trim());
+      }
+    });
+
+    problems.forEach((problem) => {
+      const problemId = String(problem.ID ?? '').trim();
+      const problemTitle = String(problem.Title ?? '').toLowerCase().trim();
+
+      let problemSlug = '';
+      if (problem.URL) {
+        const match = problem.URL.match(/\/problems\/([a-zA-Z0-9-]+)/);
+        if (match) {
+          problemSlug = match[1].toLowerCase().trim();
+        }
+      }
+
+      if (
+        (problemId && normalizedIds.has(problemId)) ||
+        (problemSlug && normalizedSlugs.has(problemSlug)) ||
+        (problemTitle && normalizedTitles.has(problemTitle))
+      ) {
         setSolvedState(problem.ID, true);
         matchedCount++;
       }
     });
 
     return matchedCount;
-  }, [problems, setSolvedState]);
+  }, [problems, persistSolvedState, setSolvedState]);
 
   // Calculate live counts for filter buttons
   const counts = useMemo(() => {

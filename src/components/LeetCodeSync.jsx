@@ -9,7 +9,7 @@ export default function LeetCodeSync({ onSyncSolved, onSyncAllSolved }) {
   const [status, setStatus] = useState(null); // { type: 'success' | 'error' | 'info', message: string }
   const fileInputRef = useRef(null);
 
-  const consoleSnippet = `fetch('https://leetcode.com/api/problems/all/').then(r=>r.json()).then(d=>{const s=d.stat_status_pairs.filter(p=>p.status==='ac').map(p=>p.stat.question_id);const b=new Blob([JSON.stringify(s)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='leetcode_solved.json';a.click();});`;
+  const consoleSnippet = `fetch('https://leetcode.com/api/problems/all/').then(r=>r.json()).then(d=>{const s=d.stat_status_pairs.filter(p=>p.status==='ac').map(p=>p.stat.frontend_question_id ?? p.stat.question_id);const b=new Blob([JSON.stringify(s)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='leetcode_solved.json';a.click();});`;
 
   const handleSyncRecent = async (e) => {
     e.preventDefault();

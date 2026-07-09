@@ -60,10 +60,24 @@ export default function useSolvedStatus() {
     });
   }, []);
 
+  // Persist a solved or unsolved ID without touching the current in-memory set
+  const persistSolvedState = useCallback((id, isSolved) => {
+    if (!id) return;
+    const stringId = String(id).trim();
+    if (!stringId) return;
+
+    if (isSolved) {
+      localStorage.setItem(stringId, 'true');
+    } else {
+      localStorage.removeItem(stringId);
+    }
+  }, []);
+
   return {
     solvedIds,
     syncSolvedStatus,
     toggleSolved,
     setSolvedState,
+    persistSolvedState,
   };
 }
