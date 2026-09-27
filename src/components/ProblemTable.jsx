@@ -29,7 +29,7 @@ const getDifficultyBadge = (difficulty) => {
   }
 };
 
-const ProblemRow = memo(function ProblemRow({ problem, isSolved, onRowClick, toggleSolved }) {
+const ProblemRow = memo(function ProblemRow({ problem, isSolved, isPremium, onRowClick, toggleSolved, togglePremium }) {
   const frequencyValue = parsePercent(problem.Frequency);
 
   return (
@@ -84,6 +84,26 @@ const ProblemRow = memo(function ProblemRow({ problem, isSolved, onRowClick, tog
         </span>
       </td>
 
+      <td
+        onClick={(e) => e.stopPropagation()}
+        className="px-6 py-4 text-center"
+      >
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isPremium}
+            onChange={() => togglePremium(problem.ID)}
+            className="sr-only peer"
+          />
+          <div className={`w-4 h-4 border rounded flex items-center justify-center transition-all ${isPremium ? 'bg-amber-500 border-amber-500' : 'bg-zinc-900 border-zinc-700'}`}>
+            <svg className={`w-2.5 h-2.5 text-black font-bold transition-transform ${isPremium ? 'scale-100' : 'scale-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+          </div>
+          <span className={`ml-2 text-xs font-semibold ${isPremium ? 'text-amber-400' : 'text-zinc-500'}`}>
+            {isPremium ? '🔒 Premium' : 'Premium'}
+          </span>
+        </label>
+      </td>
+
       <td className="px-6 py-4 text-zinc-300 font-mono text-xs">{problem.Acceptance}</td>
 
       <td className="px-6 py-4">
@@ -116,7 +136,7 @@ const ProblemRow = memo(function ProblemRow({ problem, isSolved, onRowClick, tog
   );
 });
 
-function ProblemTable({ problems, solvedIds, toggleSolved, onRowClick }) {
+function ProblemTable({ problems, solvedIds, toggleSolved, premiumIds, togglePremium, onRowClick }) {
   const [sortConfig, setSortConfig] = useState({ key: 'ID', direction: 'ascending' });
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef(null);
@@ -140,6 +160,9 @@ function ProblemTable({ problems, solvedIds, toggleSolved, onRowClick }) {
       if (sortConfig.key === 'solved') {
         aVal = solvedIds.has(String(a.ID)) ? 1 : 0;
         bVal = solvedIds.has(String(b.ID)) ? 1 : 0;
+      } else if (sortConfig.key === 'premium') {
+        aVal = premiumIds.has(String(a.ID)) ? 1 : 0;
+        bVal = premiumIds.has(String(b.ID)) ? 1 : 0;
       } else if (sortConfig.key === 'ID') {
         aVal = parseInt(a.ID, 10) || 0;
         bVal = parseInt(b.ID, 10) || 0;
@@ -256,6 +279,16 @@ function ProblemTable({ problems, solvedIds, toggleSolved, onRowClick }) {
                 </th>
 
                 <th
+                  onClick={() => requestSort('premium')}
+                  className="px-6 py-4 cursor-pointer hover:bg-zinc-800/20 transition-colors w-32 select-none"
+                >
+                  <div className="flex items-center gap-1 group">
+                    <span>Premium</span>
+                    {getSortIcon('premium')}
+                  </div>
+                </th>
+
+                <th
                   onClick={() => requestSort('Acceptance')}
                   className="px-6 py-4 cursor-pointer hover:bg-zinc-800/20 transition-colors w-32 select-none"
                 >
@@ -284,21 +317,24 @@ function ProblemTable({ problems, solvedIds, toggleSolved, onRowClick }) {
                 <>
                   {visibleProblems.map((problem) => {
                     const isSolved = solvedIds.has(String(problem.ID));
+                    const isPremium = premiumIds.has(String(problem.ID));
 
                     return (
                       <ProblemRow
                         key={problem.ID}
                         problem={problem}
                         isSolved={isSolved}
+                        isPremium={isPremium}
                         onRowClick={onRowClick}
                         toggleSolved={toggleSolved}
+                        togglePremium={togglePremium}
                       />
                     );
                   })}
 
                   {visibleCount < sortedProblems.length && (
                     <tr ref={sentinelRef} aria-hidden="true">
-                      <td colSpan="7" className="py-5 text-center text-xs text-zinc-500">
+                      <td colSpan="8" className="py-5 text-center text-xs text-zinc-500">
                         Loading more questions...
                       </td>
                     </tr>
@@ -306,7 +342,7 @@ function ProblemTable({ problems, solvedIds, toggleSolved, onRowClick }) {
                 </>
               ) : (
                 <tr>
-                  <td colSpan="7" className="text-center py-10 text-zinc-500">
+                  <td colSpan="8" className="text-center py-10 text-zinc-500">
                     No problems found matching the criteria.
                   </td>
                 </tr>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import useSolvedStatus from './hooks/useSolvedStatus';
+import usePremiumStatus from './hooks/usePremiumStatus';
 import CSVUploader from './components/CSVUploader';
 import Dashboard from './components/Dashboard';
 import Filters from './components/Filters';
@@ -18,6 +19,7 @@ export default function App() {
   const [selectedProblem, setSelectedProblem] = useState(null);
   
   const { solvedIds, syncSolvedStatus, toggleSolved, setSolvedState, persistSolvedState } = useSolvedStatus();
+  const { premiumIds, syncPremiumStatus, togglePremium } = usePremiumStatus();
 
   // Load problems from LocalStorage on mount
   useEffect(() => {
@@ -37,7 +39,8 @@ export default function App() {
   // Sync solved status set whenever the problems list changes
   useEffect(() => {
     syncSolvedStatus(problems);
-  }, [problems, syncSolvedStatus]);
+    syncPremiumStatus(problems);
+  }, [problems, syncSolvedStatus, syncPremiumStatus]);
 
   // Handle data load (either from CSV upload or demo load)
   const handleDataLoaded = useCallback((data) => {
@@ -182,6 +185,7 @@ export default function App() {
     let hard = 0;
     let solved = 0;
     let unsolved = 0;
+    let premium = 0;
 
     problems.forEach((p) => {
       const diff = String(p.Difficulty).toLowerCase();
@@ -194,10 +198,14 @@ export default function App() {
       } else {
         unsolved++;
       }
+
+      if (premiumIds.has(String(p.ID))) {
+        premium++;
+      }
     });
 
-    return { all, easy, medium, hard, solved, unsolved };
-  }, [problems, solvedIds]);
+    return { all, easy, medium, hard, solved, unsolved, premium };
+  }, [problems, solvedIds, premiumIds]);
 
   const filteredProblems = useMemo(() => {
     return filterProblems({
@@ -207,8 +215,9 @@ export default function App() {
       statusFilter,
       acceptanceRateFilter,
       solvedIds,
+      premiumIds,
     });
-  }, [problems, searchQuery, difficultyFilter, statusFilter, acceptanceRateFilter, solvedIds]);
+  }, [problems, searchQuery, difficultyFilter, statusFilter, acceptanceRateFilter, solvedIds, premiumIds]);
 
   const hasActiveFilters =
     searchQuery.trim() !== '' ||
@@ -289,6 +298,8 @@ export default function App() {
                 problems={filteredProblems}
                 solvedIds={solvedIds}
                 toggleSolved={toggleSolved}
+                premiumIds={premiumIds}
+                togglePremium={togglePremium}
                 onRowClick={handleRowClick}
               />
             </div>

@@ -19,6 +19,7 @@ function Filters({
     hard: 0,
     solved: 0,
     unsolved: 0,
+    premium: 0,
   },
 }) {
   const difficultyOptions = [
@@ -32,6 +33,7 @@ function Filters({
     { id: 'all', label: 'All Statuses', count: counts.all, activeClass: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 ring-2 ring-indigo-500/30' },
     { id: 'solved', label: 'Solved', count: counts.solved, activeClass: 'bg-teal-500/20 text-teal-300 border-teal-500/40 ring-2 ring-teal-500/30' },
     { id: 'unsolved', label: 'Unsolved', count: counts.unsolved, activeClass: 'bg-zinc-800 text-zinc-300 border-zinc-700 ring-2 ring-zinc-500/30' },
+    { id: 'premium', label: 'Premium', count: counts.premium, activeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40 ring-2 ring-amber-500/30' },
   ];
 
   const acceptanceOptions = [

@@ -30,6 +30,7 @@ export const filterProblems = ({
   statusFilter,
   acceptanceRateFilter,
   solvedIds,
+  premiumIds,
 }) => {
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const acceptanceThreshold = getAcceptanceThreshold(acceptanceRateFilter);
@@ -40,6 +41,7 @@ export const filterProblems = ({
     const difficulty = String(problem.Difficulty ?? '').toLowerCase();
     const acceptance = parsePercentValue(problem.Acceptance);
     const isSolved = solvedIds.has(String(problem.ID));
+    const isPremium = premiumIds.has(String(problem.ID));
 
     const matchesSearch =
       normalizedSearch === '' ||
@@ -50,6 +52,7 @@ export const filterProblems = ({
     if (difficultyFilter !== 'all' && difficulty !== difficultyFilter) return false;
     if (statusFilter === 'solved' && !isSolved) return false;
     if (statusFilter === 'unsolved' && isSolved) return false;
+    if (statusFilter === 'premium' && !isPremium) return false;
     if (acceptanceThreshold > 0 && acceptance < acceptanceThreshold) return false;
 
     return true;
